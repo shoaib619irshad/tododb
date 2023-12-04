@@ -1,6 +1,5 @@
 from flask_pymongo import PyMongo , ObjectId
 from flask import Flask , request , jsonify , abort
-from pymongo.errors import PyMongoError
 
 app = Flask(__name__)
 mongodb_client = PyMongo(app, uri="mongodb://localhost:27017/todo_db")
@@ -32,12 +31,13 @@ def display_todo():
 #GET Route to display one todo
 @app.route('/todo/<ObjectId:id>', methods=["GET"])
 def display_single_todo(id):
-    try:
-        todo = db.todo.find_one({"_id": id})
+    todo = db.todo.find_one({"_id": id})
+    if todo:
         todo['_id']=str(todo['_id'])
         return jsonify(todo)
-    except PyMongoError:
-        return jsonify(error="Todo not found") , 404
+    else:
+        return jsonify(message="Id not found")
+    
 
 #PATCH Route to update a todo
 @app.route('/todo/<ObjectId:id>' , methods=["PATCH"])
@@ -45,24 +45,19 @@ def update_todo(id):
      if not request.json:
         abort(500)
 
-     title = request.json.get("title", None)
-     desc = request.json.get("description","")
-
-     if title is None and desc == "":
-        return jsonify(message="Invalid Request"), 500
-     
-     if desc == "" and not title is None:
-         todo = db.todo.find_one_and_update({'_id': id}, {"$set": {'title': title}})
-     elif title is None and desc != "":
-         todo = db.todo.find_one_and_update({'_id': id}, {"$set": {'description': desc}})
+     data = request.json
+     if "title" in data or "description" in data or "done" in data:
+         db.todo.find_one_and_update({'_id':id} , {"$set": data})
+         return jsonify(message="Updated Successfully")
      else:
-         todo = db.todo.find_one_and_update({'_id': id}, {"$set": {'title': title , 'description': desc}})
-
-     return jsonify(message="Updated Successfully")
-
+         return jsonify(message="KeyValue Error")
+ 
 
 #DELETE Route to delete a todo
 @app.route('/todo/<ObjectId:id>' , methods=["DELETE"])
 def delete_todo(id):
      todo = db.todo.find_one_and_delete({'_id': id})
-     return jsonify(message="Deleted Successfully")
+     if todo:
+         return jsonify(message="Deleted Successfully")
+     else:
+         return jsonify(message="Id not found")
