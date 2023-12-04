@@ -1,5 +1,6 @@
 from flask_pymongo import PyMongo , ObjectId
 from flask import Flask , request , jsonify , abort
+from pymongo.errors import PyMongoError
 
 app = Flask(__name__)
 mongodb_client = PyMongo(app, uri="mongodb://localhost:27017/todo_db")
@@ -26,27 +27,37 @@ def display_todo():
     todos =list(db.todo.find()) 
     for x in todos:
         x['_id']= str(x['_id'])
-    return jsonify({"data":todos ,"len":len(todos)})
+    return jsonify({"data":todos ,"count":len(todos)})
 
 #GET Route to display one todo
 @app.route('/todo/<ObjectId:id>', methods=["GET"])
 def display_single_todo(id):
-    todo = db.todo.find_one({"_id": id})
-    todo['_id']=str(todo['_id'])
-    return jsonify(todo)
+    try:
+        todo = db.todo.find_one({"_id": id})
+        todo['_id']=str(todo['_id'])
+        return jsonify(todo)
+    except PyMongoError:
+        return jsonify(error="Todo not found") , 404
 
-#PUT Route to update a todo
-@app.route('/todo/<ObjectId:id>' , methods=["PUT"])
+#PATCH Route to update a todo
+@app.route('/todo/<ObjectId:id>' , methods=["PATCH"])
 def update_todo(id):
      if not request.json:
         abort(500)
 
-     title = request.json.get("title",None)
+     title = request.json.get("title", None)
+     desc = request.json.get("description","")
 
-     if title is None:
+     if title is None and desc == "":
         return jsonify(message="Invalid Request"), 500
      
-     todo = db.todo.find_one_and_update({'_id': id}, {"$set": {'title': title}})
+     if desc == "" and not title is None:
+         todo = db.todo.find_one_and_update({'_id': id}, {"$set": {'title': title}})
+     elif title is None and desc != "":
+         todo = db.todo.find_one_and_update({'_id': id}, {"$set": {'description': desc}})
+     else:
+         todo = db.todo.find_one_and_update({'_id': id}, {"$set": {'title': title , 'description': desc}})
+
      return jsonify(message="Updated Successfully")
 
 
