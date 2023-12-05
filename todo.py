@@ -37,11 +37,10 @@ def display_single_todo(id):
             "message":"Id not found",
             "success": False
         })
-    else:
-        todo['_id']=str(todo['_id'])
-        return jsonify({
-            "data": todo,
-            "success": True
+    todo['_id']=str(todo['_id'])
+    return jsonify({
+        "data": todo,
+        "success": True
         })
     
 
@@ -65,11 +64,10 @@ def delete_todo(id):
      todo = db.todo.find_one_and_delete({'_id': id})
      if  not todo:
          return jsonify({
-             "message":"Id not found",
+             "message":"Task not found",
              "success": False
          })
-     else:
-         return jsonify({
-             "message":"Deleted Successfully",
-             "success": True
+     return jsonify({
+         "message":"Deleted Successfully",
+         "success": True
          })
