@@ -32,11 +32,17 @@ def display_todo():
 @app.route('/todo/<ObjectId:id>', methods=["GET"])
 def display_single_todo(id):
     todo = db.todo.find_one({"_id": id})
-    if todo:
-        todo['_id']=str(todo['_id'])
-        return jsonify(todo)
+    if  not todo:
+        return jsonify({
+            "message":"Id not found",
+            "success": False
+        })
     else:
-        return jsonify(message="Id not found")
+        todo['_id']=str(todo['_id'])
+        return jsonify({
+            "data": todo,
+            "success": True
+        })
     
 
 #PATCH Route to update a todo
@@ -46,7 +52,7 @@ def update_todo(id):
         abort(500)
 
      data = request.json
-     if "title" in data or "description" in data or "done" in data:
+     if "title" in data or "description" in data:
          db.todo.find_one_and_update({'_id':id} , {"$set": data})
          return jsonify(message="Updated Successfully")
      else:
@@ -57,7 +63,13 @@ def update_todo(id):
 @app.route('/todo/<ObjectId:id>' , methods=["DELETE"])
 def delete_todo(id):
      todo = db.todo.find_one_and_delete({'_id': id})
-     if todo:
-         return jsonify(message="Deleted Successfully")
+     if  not todo:
+         return jsonify({
+             "message":"Id not found",
+             "success": False
+         })
      else:
-         return jsonify(message="Id not found")
+         return jsonify({
+             "message":"Deleted Successfully",
+             "success": True
+         })
